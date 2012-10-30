@@ -1,4 +1,10 @@
 #!/usr/bin/env ruby
+#--------------------------------------------#
+#LOOK HERE YOU!!!!                           #
+#--------------------------------------------#
+# This tool requires the 'sqlite3' ruby gem. # 
+#"gem install sqlite3-ruby"                  #
+#--------------------------------------------#
 require 'net/http'
 require 'optparse'
 require 'sqlite3'
