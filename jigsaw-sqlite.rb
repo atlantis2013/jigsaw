@@ -76,7 +76,7 @@ class Record
 		return false
 	end 
 
-	def self.write_all_records_to_database(database)
+	def self.write_all_records_to_database(database, databasename)
               database.execute("CREATE TABLE IF NOT EXISTS records (
                                  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, 
                                  fname VARCHAR(255), 
@@ -103,6 +103,7 @@ class Record
 				puts error
 			end	
 		end
+		puts "Wrote #{@@records.length} records to #{databasename}\r\n"
 	end
 
 	def self.write_record_to_database(record, database)
@@ -335,7 +336,7 @@ end
 
 @options = {}
 args = OptionParser.new do |opts|
-opts.banner = "Jigsaw 1.2 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )\r\n"
+opts.banner = "Jigsaw 1.2-dev ( http://www.pentestgeek.com )\r\n"
         opts.banner += "Usage: jigsaw [options]\r\n\r\n"
         opts.banner += "\texample: jigsaw -s Google\r\n\r\n"
         opts.on("-i", "--id [Jigsaw Company ID]", "The Jigsaw ID to use to pull records") { |id| @options[:id] = id }
@@ -371,7 +372,7 @@ elsif @options[:id]
 		Record.write_all_records_to_report(@options[:report])
 	elsif @options[:database]
 		database = SQLite3::Database.new(@options[:database].to_s.chomp)
-		Record.write_all_records_to_database(database)
+		Record.write_all_records_to_database(database, @options[:database].to_s.chomp)
 	end
 elsif @options[:infile]
 	csv = @options[:infile]
