@@ -46,6 +46,7 @@ class Record
 			self.email1 = self.fname.downcase + "." + self.lname.downcase + "@" + domain
 			self.email2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase + "@" + domain
 			self.email3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase + "@" + domain
+			self.email4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase + "@" + domain
 			self.state = tempArray[24].split("'")[1].to_s.chomp
 			self.city =  tempArray[22].split(">")[1].split("<")[0].to_s.chomp
 			self.department = dept.split("-")[1].to_s.chomp
@@ -73,9 +74,9 @@ class Record
 		begin
 			# Try and print all records to the report .csv file
 			report = File.new("#{reportname}.csv", "w+")
-			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tCity\tState"
+			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState"
 			@@records.each do |record|
-				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.city + "\t" + record.state
+				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state
 			end
 			puts "Wrote #{@@records.length} records to #{report.path}\r\n"
 			report.close
