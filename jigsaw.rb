@@ -12,7 +12,7 @@ class Record
 	@@counter = 0
 	@@records = Array.new 
 
-	attr_accessor :fname, :lname, :fullname, :position, :city, :state, :email1, :email2, :email3, :email4, :department
+	attr_accessor :fname, :lname, :fullname, :position, :city, :state, :email1, :email2, :email3, :email4, :department, :username1, :username2, :username3, :username4	# modified to add usernames
 
 	def self.domain_is_set
 		return @@domain_is_set
@@ -38,7 +38,8 @@ class Record
 
 	def initialize(record_unclean, domain, dept=nil)
 		begin
-			tempArray = record_unclean.split("=")
+			loggedInClean = record_unclean.sub(/<a title(.*?)<\/a>/, "")	# added to clean the record when logged in, links are added to some contacts for points
+			tempArray = loggedInClean.split("=")	# modified
 			self.lname = tempArray[19].to_s.split(">")[1].split(",")[0].to_s.chomp
 			self.fname = tempArray[19].to_s.split(">")[1].to_s.split(",")[1].to_s.split("<")[0].to_s.chomp.gsub(/ /, "").chomp
 			self.fullname = self.fname + " " + self.lname
@@ -50,6 +51,10 @@ class Record
 			self.state = tempArray[24].split("'")[1].to_s.chomp
 			self.city =  tempArray[22].split(">")[1].split("<")[0].to_s.chomp
 			self.department = dept.split("-")[1].to_s.chomp
+			self.username1 = self.fname.downcase + "." + self.lname.downcase		# added
+			self.username2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase	# added
+			self.username3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase	# added
+			self.username4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase	# added
 			unless Record.record_exists(self)
 				@@records << self
 			end
@@ -74,9 +79,10 @@ class Record
 		begin
 			# Try and print all records to the report .csv file
 			report = File.new("#{reportname}.csv", "w+")
-			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState"
+			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState\tUsername1\tUsername2\tUsername3\tUsername4"
 			@@records.each do |record|
-				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state
+				# modified to add usernames
+				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state + "\t" + record.username1 + "\t" + record.username2 + "\t" + record.username3 + "\t" + record.username4
 			end
 			puts "Wrote #{@@records.length} records to #{report.path}\r\n"
 			report.close
@@ -99,7 +105,7 @@ def get_company_domain(response)
 		puts "Retrieving list of company's registered domains" if @options[:verbose]
 		domains = Array.new
 		response.body.each_line do |line|
-			if line.include?("option value=\"") && line.include?(".") && !line.include?("multiple=\"multiple\" size=\"")
+			if line.include?("option value=\"") && line.include?(".") && !line.include?("multiple=\"multiple\" size=\"") && !line.include?("<select name=") # modified to exclude additional lines when logged in
 				domains << line.split(">")[1].split("<")[0].to_s.chomp
 			end
 		end
@@ -131,12 +137,19 @@ def get_company_domain(response)
 	end
 end
 
-def get_cookie(http=nil)
+def get_cookie(http=nil, login)
 	# This method will make the initial get request and set the cookie value to use
 	# for the rest of the program
+	# if login=1 then log into jigsaw
 	begin
-		# Try to grab cookies	
-		resp = http.get("/index.xhtml", {})
+		if login == 1	# added if/else for login
+			# Log into Jigsaw before grabbing cookies
+			resp = http.post("/Login.xhtml", 'opCode=login&email=' + @options[:username] + '&password=' + @options[:password])
+		else
+			# Try to grab cookies	
+			resp = http.get("/index.xhtml", {})
+		end
+
 		cookie = resp.response['set-cookie']
 		headers = { 
 			"User-Agent" => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20100101 Firefox/16.0',
@@ -268,20 +281,29 @@ end
 
 @options = {}
 args = OptionParser.new do |opts|
-opts.banner = "Jigsaw 1.2 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )\r\n"
+opts.banner = "Jigsaw 1.3 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )\r\n"
         opts.banner += "Usage: jigsaw [options]\r\n\r\n"
         opts.banner += "\texample: jigsaw -s Google\r\n\r\n"
         opts.on("-i", "--id [Jigsaw Company ID]", "The Jigsaw ID to use to pull records") { |id| @options[:id] = id }
         opts.on("-s", "--search [Company Name]", "Name of organization to search for") { |search| @options[:search] = search.to_s.chomp }
         opts.on("-r", "--report [Output Filename]", "Name to use for report EXAMPLE: \'-r google\' will generate \'google.csv\'") { |report| @options[:report] = report.to_s.chomp }
 	opts.on("-d", "--domain [Domain Name]", "If you want you can specify the domain name to craft emails with") { |domain| @options[:domain] = domain.to_s.chomp }
-        opts.on("-v", "--verbose", "Enables verbose output\r\n\r\n") { |v| @options[:verbose] = true }
+        opts.on("-v", "--verbose", "Enables verbose output") { |v| @options[:verbose] = true }	# modified
+        opts.on("-u", "--username [Email Address]", "Your Jigsaw Username, which is your email") { |username| @options[:username] = username }	# added
+        opts.on("-p", "--password [Password]", "Your Jigsaw Password\r\n\r\n") { |password| @options[:password] = password }				# added
 end
 args.parse!(ARGV)
 
 
-http = Net::HTTP.new('www.jigsaw.com', 80)
-headers = get_cookie(http)
+http = Net::HTTP.new('www.jigsaw.com', 443)	# changed to port 443
+http.use_ssl = true				# added
+http.verify_mode = OpenSSL::SSL::VERIFY_NONE	# added
+
+if @options[:username] && @options[:password]	# added if/else
+	headers = get_cookie(http, 1)
+else
+	headers = get_cookie(http, 0)
+end
 
 if @options[:search]
 	search_by_name(http, headers, @options[:search])

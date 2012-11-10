@@ -14,7 +14,7 @@ Try the -d option to specify a domain to use to craft emails with
 Help:
 -----
 	$ ./jigsaw -h
-	Jigsaw 1.2 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )
+	Jigsaw 1.3 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )
 	Usage: jigsaw [options]
 
 		example: jigsaw -s Google
@@ -24,6 +24,8 @@ Help:
     		-r, --report [Output Filename]   Name to use for report EXAMPLE: '-r google' will generate 'google.csv'
     		-d, --domain [Domain Name]       If you want you can specify the domain name to craft emails with
     		-v, --verbose                    Enables verbose output
+		-u, --username [Email Address]   Your Jigsaw Username, which is your email
+		-p, --password [Password]        Your Jigsaw Password
 Example1:
 ---------
 	$ ./jigsaw -s Google
