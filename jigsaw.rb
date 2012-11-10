@@ -12,7 +12,7 @@ class Record
 	@@counter = 0
 	@@records = Array.new 
 
-	attr_accessor :fname, :lname, :fullname, :position, :city, :state, :email1, :email2, :email3, :email4, :department, :username1, :username2, :username3, :username4	# modified to add usernames
+	attr_accessor :fname, :lname, :fullname, :position, :city, :state, :email1, :email2, :email3, :email4, :department, :username1, :username2, :username3, :username4
 
 	def self.domain_is_set
 		return @@domain_is_set
@@ -81,7 +81,6 @@ class Record
 			report = File.new("#{reportname}.csv", "w+")
 			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState\tUsername1\tUsername2\tUsername3\tUsername4"
 			@@records.each do |record|
-				# modified to add usernames
 				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state + "\t" + record.username1 + "\t" + record.username2 + "\t" + record.username3 + "\t" + record.username4
 			end
 			puts "Wrote #{@@records.length} records to #{report.path}\r\n"

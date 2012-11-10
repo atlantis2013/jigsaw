@@ -6,6 +6,15 @@ Collaborative project between Royce Davis (R3dy) and humble-desser
 
 Contact: royce.e.davis@gmail.com
 
+Update 11/10/2012 - Travis Lee
+-----------------
+Jigsaw now doesn't show the full name of a contact on the directory listing unless you are logged in (free account works).
+
+-Added options (-u and -p) to authenticate into Jigsaw to see the full name. 
+-Changed the connection to use HTTPS for all requests.
+-Added the generation of usernames in the report.
+
+
 Update 10/20/2012
 -----------------
 Try the -d option to specify a domain to use to craft emails with
@@ -24,8 +33,8 @@ Help:
     		-r, --report [Output Filename]   Name to use for report EXAMPLE: '-r google' will generate 'google.csv'
     		-d, --domain [Domain Name]       If you want you can specify the domain name to craft emails with
     		-v, --verbose                    Enables verbose output
-		-u, --username [Email Address]   Your Jigsaw Username, which is your email
-		-p, --password [Password]        Your Jigsaw Password
+    		-u, --username [Email Address]   Your Jigsaw Username, which is your email
+    		-p, --password [Password]        Your Jigsaw Password
 Example1:
 ---------
 	$ ./jigsaw -s Google
