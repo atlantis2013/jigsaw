@@ -1,3 +1,13 @@
+NOTE
+------
+Jigsaw is optomized to run with ruby 1.9.2 or higher using RVM
+
+Install RVM
+	\curl -L https://get.rvm.io | bash -s stable --ruby
+
+Install Ruby
+	rvm install 1.9.2
+
 Jigsaw.rb 
 =========
 Is a simple ruby script for enumerating information about a company's employees.
