@@ -292,6 +292,9 @@ opts.banner = "Jigsaw 1.3 ( http://www.pentestgeek.com/ - http://hdesser.wordpre
         opts.on("-p", "--password [Password]", "Your Jigsaw Password\r\n\r\n") { |password| @options[:password] = password }				# added
 end
 args.parse!(ARGV)
+if not ARGV.empty?
+	ARGV.delete_if{|x| x != nil}
+end
 
 
 http = Net::HTTP.new('www.jigsaw.com', 443)	# changed to port 443
