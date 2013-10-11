@@ -1,345 +1,146 @@
 #!/usr/bin/env ruby
 # Copyright (C) 2013 Royce Davis (@r3dy__)
-#
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#any later version.
-#
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-#GNU General Public License for more details.
-#
-#You should have received a copy of the GNU General Public License
-#along with this program. If not, see <http://www.gnu.org/licenses/>
-#
-#############################################################################################
+# #
+# #This program is free software: you can redistribute it and/or modify
+# #it under the terms of the GNU General Public License as published by
+# #the Free Software Foundation, either version 3 of the License, or
+# #any later version.
+# #
+# #This program is distributed in the hope that it will be useful,
+# #but WITHOUT ANY WARRANTY; without even the implied warranty of
+# #MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# #GNU General Public License for more details.
+# #
+# #You should have received a copy of the GNU General Public License
+# #along with this program. If not, see <http://www.gnu.org/licenses/>
+
+APP_ROOT = File.dirname(__FILE__)
+$:.unshift( File.join(APP_ROOT, 'lib'))
 require 'net/http'
 require 'optparse'
+require 'record'
+require 'jigsawhttp'
+require 'breakbot'
 
-DEPARTMENTS = ["10-Sales", "20-Marketing", "30-Finance & Administration", "40-Human Resources", "50-Support", "60-Engineering & Research", "70-Operations", "80-IT & IS", "0-Other"]
+@cookies = ""
+@threads = []
+thread_count = 0
+@records_harvested = 0
 
-class Record
-	# This class will define all attributes of an individual record.  For example fname, lname, email...
-	# It should also have some class methods that can check if a record exists so as not to duplicate or print all records to the screen/report
-	@@domain = ""
-	@@domain_is_set = false
-	@@counter = 0
-	@@records = Array.new 
-
-	attr_accessor :fname, :lname, :fullname, :position, :city, :state, :email1, :email2, :email3, :email4, :department, :username1, :username2, :username3, :username4
-
-	def self.domain_is_set
-		return @@domain_is_set
-	end
-
-	def self.set_domain(domain)
-		@@domain = domain
-		@@domain_is_set = true
-	end
-
-	def self.get_domain
-		return @@domain
-	end
-
-	def self.counter(num)
-		@@counter = @@counter + num
-		return @@counter
-	end
-  
-	def self.get_counter
-		return @@counter
-	end
-
-	def initialize(record_unclean, domain, dept=nil)
-		begin
-			loggedInClean = record_unclean.sub(/<a title(.*?)<\/a>/, "")	# added to clean the record when logged in, links are added to some contacts for points
-			tempArray = loggedInClean.split("=")	# modified
-			self.lname = tempArray[19].to_s.split(">")[1].split(",")[0].to_s.chomp
-			self.fname = tempArray[19].to_s.split(">")[1].to_s.split(",")[1].to_s.split("<")[0].to_s.chomp.gsub(/ /, "").chomp
-			self.fullname = self.fname + " " + self.lname
-			self.position = tempArray[15].split(">")[1].split("<")[0].to_s.chomp
-			self.email1 = self.fname.downcase + "." + self.lname.downcase + "@" + domain
-			self.email2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase + "@" + domain
-			self.email3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase + "@" + domain
-			self.email4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase + "@" + domain
-			self.state = tempArray[24].split("'")[1].to_s.chomp
-			self.city =  tempArray[22].split(">")[1].split("<")[0].to_s.chomp
-			self.department = dept.split("-")[1].to_s.chomp
-			self.username1 = self.fname.downcase + "." + self.lname.downcase		# added
-			self.username2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase	# added
-			self.username3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase	# added
-			self.username4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase	# added
-			unless Record.record_exists(self)
-				@@records << self
-			end
-		rescue StandardError => create_record_error
-			puts "Couldn't create a new record. #{create_record_error}"
-			return create_record_error
-		end
-
-	end
-  
-	def self.record_exists(record)
-		@@records.each do |rec|
-			if rec.fullname == record.fullname && rec.position == record.position
-				return true
-			end
-		end
-		return false
-	end 
-  
-	def self.write_all_records_to_report(reportname)
-		puts "Generating the final #{reportname}.csv report"
-		begin
-			# Try and print all records to the report .csv file
-			report = File.new("#{reportname}.csv", "w+")
-			report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState\tUsername1\tUsername2\tUsername3\tUsername4"
-			@@records.each do |record|
-				report.puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state + "\t" + record.username1 + "\t" + record.username2 + "\t" + record.username3 + "\t" + record.username4
-			end
-			puts "Wrote #{@@records.length} records to #{report.path}\r\n"
-			report.close
-		rescue StandardError => gen_report_error
-			puts "Error generateing the report."
-			return gen_report_error
-		end
-	end
-
-	def self.print_all_records_to_screen
-		@@records.each do |record|
-			puts record.fullname + "\t" + record.department + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.city + "\t" + record.state
-		end
-		puts "Dumped #{@@records.length} records"
-	end
-end
-
-def get_company_domain(response)
-	begin
-		puts "Retrieving list of company's registered domains" if @options[:verbose]
-		domains = Array.new
-		response.body.each_line do |line|
-			if line.include?("option value=\"") && line.include?(".") && !line.include?("multiple=\"multiple\" size=\"") && !line.include?("<select name=") # modified to exclude additional lines when logged in
-				domains << line.split(">")[1].split("<")[0].to_s.chomp
-			end
-		end
-		if domains.length == 1
-			puts "Your search only returned one domain.  Using \'#{domains[0]}\' to craft emails."
-			Record.set_domain(domains[0])
-			return domains[0]
-		end
-		puts "Your target has #{domains.length} domain/s:\r\n\r\n"
-		counter = 1
-		domains.each do |domain|
-			puts "[#{counter.to_s}] - " + domain
-			domains[counter - 1] = "#{counter.to_s}-#{domain}"
-			counter = counter + 1
-		end
-		puts "\r\n"
-		print "Enter the number of the domain to use for crafting emails: "
-		answer = gets.chomp.to_s
-		domains.each do |domain|
-			if domain.split("-")[0] == answer
-				puts "Using \'#{domain.split("-")[1]}\' to craft emails."
-				Record.set_domain(domain.split("-")[1])
-				return domain.split("-")[1]
-			end
-		end
-	rescue StandardError => domain_set
-		puts "Error setting domain: #{domain_set}"
-		return domain_set
-	end
-end
-
-def get_cookie(http=nil, login)
-	# This method will make the initial get request and set the cookie value to use
-	# for the rest of the program
-	# if login=1 then log into jigsaw
-	begin
-		if login == 1	# added if/else for login
-			# Log into Jigsaw before grabbing cookies
-			resp = http.post("/Login.xhtml", 'opCode=login&email=' + @options[:username] + '&password=' + @options[:password])
-		else
-			# Try to grab cookies	
-			resp = http.get("/index.xhtml", {})
-		end
-
-		cookie = resp.response['set-cookie']
-		headers = { 
-			"User-Agent" => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:16.0) Gecko/20100101 Firefox/16.0',
-			"Cookie" => cookie,
-			"Accept" => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-			"Accept-Encoding" => 'text/html;charset=UTF-8',
-			"Proxy-Connection" => 'keep-alive',
-			"Cache-Control" => 'max-age=0'
-		 }
-		return headers
-	rescue StandardError => cookie_error
-		puts "Error getting cookie. #{cookie_error}"
-		return cookie_error
-	end
-end
-
-
-def search_by_name(http, headers, search)
-	#This method will search for a company name provided by the user at runtime
-	# It should return an array of strings conaning Company name, number of employees, and jigsaw ID
-	puts "Searching for #{search}."
-	begin
-		# Try and do stuff
-		path = "/FreeTextSearch.xhtml?opCode=search&autoSuggested=true&freeText=#{search}"
-		resp, data = http.get(path, headers)
-		if !resp.body.include?("Company Search Results")
-			resp.body.split("\r\n").each do |line|
-				if line.include?("view more and edit")
-					puts "Jigsaw ID for #{search} is: " + line.split("/")[1].to_s.gsub(/id/, "")
-				end
-			end
-		end
-		resp.body.split("</tr>").each do |line|
-			if line.include?("type=\'checkbox\' class=\'checkbox\'  name=\'ids\' value=")
-				company =  line.split("=")[9].to_s.split("'")[1].to_s.split("'")[0].to_s
-				id = line.split("=")[10].to_s.split("/")[1].to_s.gsub(/id/, "")
-				employees = line.split("=")[13].split("'")[1].to_s.split("'")[0].to_s
-				puts "Jigsaw ID: " + id + "\t- " + company + "\t" + "(" + employees + " employee/s)"
-			end
-		end
-	rescue StandardError => search_error
-		puts "Error performing search. #{search_error}"
-		return search_error
-	end
-end
-
-
-def get_number_of_records(http, headers, id, dept)
-	# This module will find the number of records within a givn jigsaw search matching a specified
-	# Department.  Example.  There are 133 records in the Finance deparment of company XYZ
-	threads = Array.new
-	begin
-		# Try and do stuff
-		threads << Thread.new {
-			path = "/SearchContact.xhtml?companyId=#{id}&opCode=showCompDir&dept=#{dept.split("-")[0].to_s}&rpage=1&rowsPerPage=50"
-			resp, data = http.get(path, headers)
-			domain = get_company_domain(resp) unless Record.domain_is_set
-			numrecs = ""
-			resp.body.split(";").each do |line|
-				numrecs = line.split("+")[1].split('"')[1].to_s.chomp if line.include?("Your search returned") && !line.include?("at least")
-			end
-			if numrecs.include?(",")
-				numrecs = numrecs.gsub(/,/, "")
-			end
-			Record.counter(numrecs.to_i) unless dept.split("-")[1] == "Other"
-			if dept.split("-")[1] == "Other"
-				recs = numrecs.to_i - Record.get_counter
-				puts "Found #{recs.to_s} records in the #{dept.split("-")[1].to_s} department."
-			end
-			puts "Found #{numrecs} records in the #{dept.split("-")[1].to_s} department." unless dept.split("-")[1] == "Other"
-			pages = get_number_of_pages(numrecs)
-			pages.times do |page|
-				inline_threads = Array.new
-				inline_threads << Thread.new {
-					pagenum = page + 1
-					get_page_of_records(http, headers, id, dept, pagenum, Record.get_domain)
-				}
-				inline_threads.each { |thread| thread.join }
-			end
-			puts "Total records so far: " + Record.get_counter.to_s if @options[:verbose]
-		}
-		threads.each { |thread| thread.join }
-	rescue StandardError => num_error
-		puts "Error retrieving number of records #{num_error}"
-		return num_error
-	end
-end 
-
-
-def get_number_of_pages(numrec)
-	# This simply computes the number of records stored in 'numrec' devided evenly by 50
-	# Example if numrec == 60 this method will return 2 because we will need to make 2 page requests.  The first showing
-	# records 1-50 and the second showing 51-60.
-	begin
-		answer = (numrec.to_i + 50) / 50 * 50
-		return answer / 50
-	rescue StandardError => num_recs_error
-		puts "Couldn't determine the number of pages. #{num_recs_error}"
-		return num_recs_error
-	end
-end
-
-
-def get_page_of_records(http, headers, id, dept, pagenum, domain)
-	# This method will grab an entire page of records.  And create an instance of the Records class for each record
-	threads = Array.new
-	begin
-		threads << Thread.new {
-			# Try and do some stuff
-			path = "/SearchContact.xhtml?companyId=#{id}&opCode=showCompDir&dept=#{dept.split("-")[0].to_s}&rpage=#{pagenum.to_s}&rowsPerPage=50"
-			resp, data = http.get(path, headers)
-			resp.body.split("</tr>").each do |line|
-				if line.include?("input type=\'checkbox\'")
-					Record.new(line, domain, dept)
-				end
-			end
-		}
-		threads.each { |thread| thread.join }
-	rescue StandardError => page_rec_error
-		puts "Error retreving records from page #{pagenum} for the #{dept.split("-")[1].to_s} department. #{page_rec_error}"
-		return page_rec_error
-	end
-end
-
+# If no arguments are passed at runtime display this suggestion
 unless ARGV.length > 0
         puts "Try ./jigsaw.rb -h\r\n\r\n"
-        exit!
+        exit
 end
 
+# These are the available runtime options
 @options = {}
 args = OptionParser.new do |opts|
-opts.banner = "Jigsaw 1.3 ( http://www.pentestgeek.com/ - http://hdesser.wordpress.com/ )\r\n"
-        opts.banner += "Usage: jigsaw [options]\r\n\r\n"
-        opts.banner += "\texample: jigsaw -s Google\r\n\r\n"
-        opts.on("-i", "--id [Jigsaw Company ID]", "The Jigsaw ID to use to pull records") { |id| @options[:id] = id }
-        opts.on("-s", "--search [Company Name]", "Name of organization to search for") { |search| @options[:search] = search.to_s.chomp }
-        opts.on("-r", "--report [Output Filename]", "Name to use for report EXAMPLE: \'-r google\' will generate \'google.csv\'") { |report| @options[:report] = report.to_s.chomp }
-	opts.on("-d", "--domain [Domain Name]", "If you want you can specify the domain name to craft emails with") { |domain| @options[:domain] = domain.to_s.chomp }
-        opts.on("-v", "--verbose", "Enables verbose output") { |v| @options[:verbose] = true }	# modified
-        opts.on("-u", "--username [Email Address]", "Your Jigsaw Username, which is your email") { |username| @options[:username] = username }	# added
-        opts.on("-p", "--password [Password]", "Your Jigsaw Password\r\n\r\n") { |password| @options[:password] = password }				# added
+  opts.banner = "Jigsaw.rb VERSION: 1.5.3 - UPDATED: 09/15/2013\r\n\r\n"
+  opts.banner += "References:\r\n"
+  opts.banner += "\thttp://www.pentestgeek.com/2012/09/27/email-address-harvesting/\r\n"
+  opts.banner += "\thttps://github.com/AccuvantLABS/jigsaw\r\n\r\n"
+  opts.banner += "Usage: jigsaw [options]\r\n\r\n"
+  opts.banner += "\texample: jigsaw -s Google\r\n\r\n"
+  opts.on("-i", "--id [Jigsaw Company ID]", "The Jigsaw ID to use to pull records") { |id| @options[:id] = id }
+  opts.on("-P", "--proxy-host [IP Address]", "IP Address or Hostname of proxy server") { |proxy_host| @options[:proxy_host] = proxy_host }
+  opts.on("-p", "--proxy-port [Port Number[", "Proxy port") { |port| @options[:proxy_port] = port }
+  opts.on("-k", "--keyword [Text String]", "Text string contained in employee's title") { |keyword| @options[:keyword] = keyword }
+  opts.on("-s", "--search [Company Name]", "Name of organization to search for") { |search| @options[:search] = search.to_s.chomp }
+  opts.on("-r", "--report [Output Filename]", "Name to use for report EXAMPLE: \'-r google\' will generate \'google.csv\'") { |report| @options[:report] = report.to_s.chomp }
+  opts.on("-d", "--domain [Domain Name]", "If you want you can specify the domain name to craft emails with") { |domain| @options[:domain] = domain.to_s.chomp }
+  opts.on("-D", "--debug", "Set this option to see HTTP requests/responses") { |debug| @options[:debug] = true }
+  opts.on("-v", "--verbose", "Enables verbose output\r\n\r\n") { |v| @options[:verbose] = true }
 end
 args.parse!(ARGV)
-if not ARGV.empty?
-	ARGV.delete_if{|x| x != nil}
+
+def finish_and_exit
+  if @options[:report]
+    Record.write_all_records_to_report(@options[:report])
+  else
+    Record.print_all_records_to_screen
+  end
 end
 
+begin
+  #if -s option is passed perform the search function
+  if @options[:search]
+    if !break_bot_challenge()
+      puts "Challenge not broken, attempting anyway.  Hold on to your butts!"
+    end
+    result = search_for_company(@options[:search], @cookies)
+    case
+    when result.is_a?(Array)
+      puts "Your search returned multiple results\r\n"
+      result.each { |company|
+        puts "ID: #{company["id"]}\tEmployees: #{company["records"]}\tName: #{company["name"]}"
+      }
+    when result.is_a?(Integer)
+      puts "Jigsaw ID for #{@options[:search]} = #{result}"
+    when result.is_a?(String)
+      some_new_records = Array.new
+      puts "Possible matches for your search...\r\n"
+      result.split("-").each {|record|
+        some_new_records << harvest_single_record("null", record, @cookies)
+      }
+      some_new_records.each { |rec| puts rec["firstname"] + " " + rec["lastname"] + "\t" + rec["title"] + "\t" + rec["company"] + "\t" + rec["city"] + "\t" + rec["state"] + "\t" + rec["ID"]}
+    when result == nil
+      puts "Your query did not return any results"
+    end
+    exit!
+  end
 
-http = Net::HTTP.new('www.jigsaw.com', 443)	# changed to port 443
-http.use_ssl = true				# added
-http.verify_mode = OpenSSL::SSL::VERIFY_NONE	# added
-
-if @options[:username] && @options[:password]	# added if/else
-	headers = get_cookie(http, 1)
-else
-	headers = get_cookie(http, 0)
+  # if the -i option is passed
+  if @options[:id]
+    if !@options[:domain]
+      puts "Please specify the -d option and set a domain to craft emails with.\r\n\r\n"
+      exit!
+    end
+    break_bot_challenge()
+    company_record_ids = []
+    puts "Requesting the number of records for your search" if @options[:verbose]
+    record_count = harvest_number_of_records(request_page("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=showCompDir", @cookies))
+    page_count = get_number_of_pages(record_count)
+    puts "Extracting #{record_count + 1} records from #{page_count} pages"
+    page_count.times do |num|
+      page = num + 1
+      puts "Harvesting Record Numbers From Page: #{page}" if @options[:verbose]
+      @threads << Thread.new {
+        company_record_ids << harvest_record_ids(request_page("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=paging&rpage=#{page}&rowsPerPage=50", @cookies))
+      }
+    end
+    @threads.each { |thread| thread.join }
+    puts "Downloading information from #{record_count + 1} individual records.  This may take a while" if @options[:verbose]
+    company_record_ids.each do |page|
+      page.each do |id|
+        @threads << Thread.new {
+          if @options[:keyword]
+            if record = harvest_single_record(@options[:id], id, @cookies, @options[:keyword])
+              Record.new(record, @options[:domain])
+            end
+          else
+            Record.new(harvest_single_record(@options[:id], id, @cookies), @options[:domain])
+          end
+        }
+        if thread_count > 400
+          @threads.each { |thread| thread.join }
+          thread_count = 0
+        end
+        @records_harvested += 1
+        Record.set_percent_complete(Numeric.percent_of(@records_harvested,(record_count + 1)))
+      end
+      print  "\r(Percent completed: #{Numeric.clean_up_percentage(Record.get_percent_complete.round(2))}%)"
+      @threads.each { |thread| thread.join }
+    end
+  end
+  puts "\r\nFinished."
+  finish_and_exit
+rescue => error_message
+  puts "\r\nSomething went seriously wrong"
+  puts error_message
+  finish_and_exit
+rescue SystemExit, Interrupt
+  puts "\r\nCaught system interupt.  Program did not finish"
+  finish_and_exit
 end
 
-if @options[:search]
-	search_by_name(http, headers, @options[:search])
-elsif @options[:id]
-	# Do other stuff
-	if @options[:domain]
-		if @options[:domain] == ""
-			puts "Domain specified with -d cannot be blank.\r\n\r\n"
-			exit!
-		end
-		Record.set_domain(@options[:domain])
-	end
-	DEPARTMENTS.each do |dept|
-		get_number_of_records(http, headers, @options[:id].to_s.chomp, dept)
-	end
-	if @options[:report]
-		Record.write_all_records_to_report(@options[:report])
-	else
-		Record.print_all_records_to_screen
-	end
-end
