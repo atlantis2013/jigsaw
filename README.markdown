@@ -3,7 +3,7 @@ Jigsaw.rb
 Is a simple ruby script for enumerating information about a company's employees.
 It is useful for Social Engineering or Email Phishing
 
-Contact: royce.e.davis@gmail.com
+Contact: royce.e.davis@gmail.com 
 
 Help:
 -----
