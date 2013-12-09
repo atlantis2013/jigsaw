@@ -7,7 +7,7 @@ Contact: royce.e.davis@gmail.com
 
 Help:
 -----
-	jigsaw.rb VERSION: 1.5.3 - UPDATED: 09/15/2013
+	Jigsaw.rb VERSION: 1.5.4 - UPDATED: 12/09/2013
 
 	References:
 		http://www.pentestgeek.com/2012/09/27/email-address-harvesting/
