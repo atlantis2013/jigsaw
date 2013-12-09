@@ -32,12 +32,12 @@ Update 09/15/2013
 -----------------
 Added verbose percentage completed output when pulling records from
 large companies.
-Also added clean exiting from Ctrl-c interupt.
+Also added clean exiting from Ctrl-c interrupt.
 
 
 Update 07/18/2013
 -----------------
-The search functionality now works with an individual's name.  Its not perfect but based on the results the webpage returns jigsaw.rb can tell the difference between a search for a company or a person.  If a search for a person was provided all results are pulled down and displayed along with their name, title, company, city, state, and jigsawID.
+The search functionality now works with an individual's name.  Its not perfect but based on the results the web page returns jigsaw.rb can tell the difference between a search for a company or a person.  If a search for a person was provided all results are pulled down and displayed along with their name, title, company, city, state, and jigsawID.
 
 	Example:
 		./jigsaw.rb -s "Mark Maxey"
@@ -81,15 +81,15 @@ Update 06/11/2013
 -----------------
 New version 1.5 is out.  with added 'breakbot.rb' library which tricks the Jigsaw server
 into thinking we are a user on a browser and not an automated tool.  This allows us to do what ever
-we want and not get stoped/blocked by their WAF
+we want and not get stopped/blocked by their WAF
 
 New Features:
 
 	-Proxy support!  This allows you to run jigsaw through an HTTP proxy such as burp for further analysis or 
-		staying annonymous
+		staying anonymous
 
 	-Debugging.  Now you can view each HTTP request/response if you want to troubleshoot the next time
-		they figure out somethign to stop the tool
+		they figure out something to stop the tool
 
 
 Update 10/20/2012
