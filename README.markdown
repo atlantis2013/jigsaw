@@ -11,7 +11,7 @@ Help:
 
 	References:
 		http://www.pentestgeek.com/2012/09/27/email-address-harvesting/
-		https://github.com/AccuvantLABS/jigsaw
+		https://github.com/pentestgeek/jigsaw
 
 	Usage: jigsaw [options]
 
