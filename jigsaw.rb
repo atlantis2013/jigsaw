@@ -22,7 +22,7 @@ require 'record'
 require 'jigsawhttp'
 require 'breakbot'
 
-@cookies = ""
+@cookies = ''
 @threads = []
 thread_count = 0
 @records_harvested = 0
@@ -36,21 +36,21 @@ end
 # These are the available runtime options
 @options = {}
 args = OptionParser.new do |opts|
-  opts.banner = "Jigsaw.rb VERSION: 1.5.3 - UPDATED: 09/15/2013\r\n\r\n"
+  opts.banner = "Jigsaw.rb VERSION: 1.5.4 - UPDATED: 12/09/2013\r\n\r\n"
   opts.banner += "References:\r\n"
   opts.banner += "\thttp://www.pentestgeek.com/2012/09/27/email-address-harvesting/\r\n"
   opts.banner += "\thttps://github.com/AccuvantLABS/jigsaw\r\n\r\n"
   opts.banner += "Usage: jigsaw [options]\r\n\r\n"
   opts.banner += "\texample: jigsaw -s Google\r\n\r\n"
-  opts.on("-i", "--id [Jigsaw Company ID]", "The Jigsaw ID to use to pull records") { |id| @options[:id] = id }
-  opts.on("-P", "--proxy-host [IP Address]", "IP Address or Hostname of proxy server") { |proxy_host| @options[:proxy_host] = proxy_host }
-  opts.on("-p", "--proxy-port [Port Number[", "Proxy port") { |port| @options[:proxy_port] = port }
-  opts.on("-k", "--keyword [Text String]", "Text string contained in employee's title") { |keyword| @options[:keyword] = keyword }
-  opts.on("-s", "--search [Company Name]", "Name of organization to search for") { |search| @options[:search] = search.to_s.chomp }
-  opts.on("-r", "--report [Output Filename]", "Name to use for report EXAMPLE: \'-r google\' will generate \'google.csv\'") { |report| @options[:report] = report.to_s.chomp }
-  opts.on("-d", "--domain [Domain Name]", "If you want you can specify the domain name to craft emails with") { |domain| @options[:domain] = domain.to_s.chomp }
-  opts.on("-D", "--debug", "Set this option to see HTTP requests/responses") { |debug| @options[:debug] = true }
-  opts.on("-v", "--verbose", "Enables verbose output\r\n\r\n") { |v| @options[:verbose] = true }
+  opts.on('-i', '--id [Jigsaw Company ID]', 'The Jigsaw ID to use to pull records') { |id| @options[:id] = id }
+  opts.on('-P', '--proxy-host [IP Address]', 'IP Address or Hostname of proxy server') { |proxy_host| @options[:proxy_host] = proxy_host }
+  opts.on('-p', '--proxy-port [Port Number]', 'Proxy port') { |port| @options[:proxy_port] = port }
+  opts.on('-k', '--keyword [Text String]', 'Text string contained in employee\'s title') { |keyword| @options[:keyword] = keyword }
+  opts.on('-s', '--search [Company Name]', 'Name of organization to search for') { |search| @options[:search] = search.to_s.chomp }
+  opts.on('-r', '--report [Output Filename]', 'Name to use for report EXAMPLE: \'-r google\' will generate \'google.csv\'') { |report| @options[:report] = report.to_s.chomp }
+  opts.on('-d', '--domain [Domain Name]', 'If you want you can specify the domain name to craft emails with') { |domain| @options[:domain] = domain.to_s.chomp }
+  opts.on('-D', '--debug', 'Set this option to see HTTP requests/responses') { |_| @options[:debug] = true }
+  opts.on('-v', '--verbose', "Enables verbose output\r\n\r\n") { |_| @options[:verbose] = true }
 end
 args.parse!(ARGV)
 
@@ -65,40 +65,39 @@ end
 begin
   #if -s option is passed perform the search function
   if @options[:search]
-    if !break_bot_challenge()
-      puts "Challenge not broken, attempting anyway.  Hold on to your butts!"
-    end
+    puts 'Challenge not broken, attempting anyway.  Hold on to your butts!' unless break_bot_challenge
     result = search_for_company(@options[:search], @cookies)
     case
     when result.is_a?(Array)
       puts "Your search returned multiple results\r\n"
       result.each { |company|
-        puts "ID: #{company["id"]}\tEmployees: #{company["records"]}\tName: #{company["name"]}"
+        puts "ID: #{company['id']}\tEmployees: #{company['records']}\tName: #{company['name']}"
       }
     when result.is_a?(Integer)
       puts "Jigsaw ID for #{@options[:search]} = #{result}"
     when result.is_a?(String)
       some_new_records = Array.new
       puts "Possible matches for your search...\r\n"
-      result.split("-").each {|record|
-        some_new_records << harvest_single_record("null", record, @cookies)
+      result.split('-').each {|record|
+        some_new_records << harvest_single_record('null', record, @cookies)
       }
-      some_new_records.each { |rec| puts rec["firstname"] + " " + rec["lastname"] + "\t" + rec["title"] + "\t" + rec["company"] + "\t" + rec["city"] + "\t" + rec["state"] + "\t" + rec["ID"]}
+      some_new_records.each { |rec| puts "#{rec['firstname']} #{rec['lastname']}\t#{rec['title']}\t#{rec['company']}\t#{rec['city']}\t#{rec['state']}\t#{rec['ID']}"
+      }
     when result == nil
-      puts "Your query did not return any results"
+      puts 'Your query did not return any results'
     end
     exit!
   end
 
   # if the -i option is passed
   if @options[:id]
-    if !@options[:domain]
+    unless @options[:domain]
       puts "Please specify the -d option and set a domain to craft emails with.\r\n\r\n"
       exit!
     end
-    break_bot_challenge()
+    break_bot_challenge
     company_record_ids = []
-    puts "Requesting the number of records for your search" if @options[:verbose]
+    puts 'Requesting the number of records for your search' if @options[:verbose]
     record_count = harvest_number_of_records(request_page("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=showCompDir", @cookies))
     page_count = get_number_of_pages(record_count)
     puts "Extracting #{record_count + 1} records from #{page_count} pages"
@@ -115,6 +114,7 @@ begin
       page.each do |id|
         @threads << Thread.new {
           if @options[:keyword]
+            # TODO: Was this below statement actually supposed to be an "==" comparison? It seems a bit wonky
             if record = harvest_single_record(@options[:id], id, @cookies, @options[:keyword])
               Record.new(record, @options[:domain])
             end
@@ -140,7 +140,7 @@ rescue => error_message
   puts error_message
   finish_and_exit
 rescue SystemExit, Interrupt
-  puts "\r\nCaught system interupt.  Program did not finish"
+  puts "\r\nCaught system interrupt.  Program did not finish"
   finish_and_exit
 end
 

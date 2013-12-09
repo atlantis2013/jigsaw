@@ -13,10 +13,12 @@
 ### #You should have received a copy of the GNU General Public License
 ### #along with this program. If not, see <http://www.gnu.org/licenses/>
 
+require 'csv'
+
 class Record
   # This class will define all attributes of an individual record.  For example fname, lname, email...
   # It should also have some class methods that can check if a record exists so as not to duplicate or print all records to the screen/report
-  @@domain = ""
+  @@domain = ''
   @@domain_is_set = false
   @@total = 0
   @@records = Array.new 
@@ -57,17 +59,17 @@ class Record
     begin
       #loggedInClean = record_unclean.sub(/<a title(.*?)<\/a>/, "")	# added to clean the record when logged in, links are added to some contacts for points
       #tempArray = loggedInClean.split("=")	# modified
-      self.lname = record["lastname"]
-      self.fname = record["firstname"]
-      self.fullname = self.fname + " " + self.lname
-      self.position = record["title"]
-      self.email1 = self.fname.downcase + "." + self.lname.downcase + "@" + domain
-      self.email2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase + "@" + domain
-      self.email3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase + "@" + domain
-      self.email4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase + "@" + domain
-      self.state = record["state"]
-      self.city =  record["city"]
-      self.company = record["company"]
+      self.lname = record['lastname']
+      self.fname = record['firstname']
+      self.fullname = self.fname + ' ' + self.lname
+      self.position = record['title']
+      self.email1 = self.fname.downcase + '.' + self.lname.downcase + '@' + domain
+      self.email2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase + '@' + domain
+      self.email3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase + '@' + domain
+      self.email4 = self.lname.downcase + self.fname.split(//)[0].to_s.downcase + '@' + domain
+      self.state = record['state']
+      self.city =  record['city']
+      self.company = record['company']
       #self.username1 = self.fname.downcase + "." + self.lname.downcase		# added
       #self.username2 = self.fname.split(//)[0].to_s.downcase + self.lname.downcase	# added
       #self.username3 = self.fname.downcase + self.lname.split(//)[0].to_s.downcase	# added
@@ -96,16 +98,16 @@ class Record
     puts "Generating the final #{reportname}.csv report"
     begin
       # Try and print all records to the report .csv file
-      report = File.new("#{reportname}.csv", "w+")
-      #report.puts "Full Name\tDepartment\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity\tState\tUsername1\tUsername2\tUsername3\tUsername4"
-      report.puts "Full Name\tPosition\tEmail1\tEmail2\tEmail3\tEmail4\tCity"
-      @@records.each do |record|
-        report.puts record.fullname + "\t" + record.position + "\t" + record.email2 + "\t" + record.email1 + "\t" + record.email3 + "\t" + record.email4 + "\t" + record.city + "\t" + record.state
+      filename = "#{reportname}.csv"
+      CSV.open(filename, 'w+') do |csv|
+        csv << ['Full Name', 'Position', 'Email1', 'Email2', 'Email3', 'Email4', 'City', 'State']
+        @@records.each do |record|
+          csv << [record.fullname, record.position, record.email2, record.email1, record.email3, record.email4, record.city, record.state]
+        end
+        puts "Wrote #{@@records.length} records to #{filename}\r\n"
       end
-      puts "Wrote #{@@records.length} records to #{report.path}\r\n"
-      report.close
     rescue StandardError => gen_report_error
-      puts "Error generateing the report."
+      puts 'Error generating the report.'
       return gen_report_error
     end
   end

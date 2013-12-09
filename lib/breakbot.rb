@@ -15,17 +15,17 @@
 
 # Checks for the presence of proxy_host and proxy_port options
 # @return both values if set
-def check_proxy()
+def check_proxy
   if @options[:proxy_host] && @options[:proxy_port]
     return @options[:proxy_host], @options[:proxy_port]
   end
 end
 
-# This sends the very first request to recieve the bot challenge and chellenge-id
+# This sends the very first request to receive the bot challenge and challenge-id
 # @param url [STRING] The url to make the HTTP request
 # @return resp.body [STRING] An HTML body object containing challenge and challenge-id
 def make_first_request(url)
-  proxy_host, proxy_port = check_proxy()
+  proxy_host, proxy_port = check_proxy
   headers = {
     'Host' => 'www.jigsaw.com',
     'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0',
@@ -35,20 +35,20 @@ def make_first_request(url)
     'DNT' => '1',
     'Connection' => 'keep-alive'
   }
-  puts output_http(headers, "request", url) if @options[:debug]
+  puts output_http(headers, 'request', url) if @options[:debug]
   http = Net::HTTP.new('www.jigsaw.com', 80, proxy_host, proxy_port)
   resp, body = http.get(url, headers)
-  puts output_http(resp.header.to_hash, "response") if @options[:debug]
+  puts output_http(resp.header.to_hash, 'response') if @options[:debug]
   return resp.body
 end
 
 # As name suggests.  The second HTTP request which sends the POST challenge, challenge-id and challenge-result
-# If all goes well this method will return the BotMittigation Golden ticket
+# If all goes well this method will return the BotMitigation Golden ticket
 # @param url [STRING] The url to make the HTTP request
 # @param challenge_hash [HASH] Hash containing challenge, challenge-id, and challenge-result values
 # @return resp [OBJECT] returns the full response object from the HTTP request 
 def make_second_request(url, challenge_hash)
-  proxy_host, proxy_port = check_proxy()
+  proxy_host, proxy_port = check_proxy
   headers = {
     'Host' => 'www.jigsaw.com',
     'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0',
@@ -65,36 +65,37 @@ def make_second_request(url, challenge_hash)
     'Cache-Control' => 'no-cache',
     'Content-Length' => '0'
   }
-  puts output_http(headers, "request", url) if @options[:debug]
+  puts output_http(headers, 'request', url) if @options[:debug]
   http = Net::HTTP.new('www.jigsaw.com', 80, proxy_host, proxy_port)
-  resp, body = http.post(url, "", headers)
-  puts output_http(resp.header.to_hash, "response") if @options[:debug]
+  resp, body = http.post(url, '', headers)
+  puts output_http(resp.header.to_hash, 'response') if @options[:debug]
   return resp
 end
 
-# This acts as the maind driving method of the library
+# This acts as the main driving method of the library
 # It calls first * second request methods, and also parses the output
-# Ultimatley the purpose of this method is to apply the Golden ticket to the 
+# Ultimately the purpose of this method is to apply the Golden ticket to the
 # @cookies instance var.  If that doesn't work there is no point in continuing with 
 # the program
-def break_bot_challenge()
+def break_bot_challenge
   begin
-    if !@options[:id]
+    unless @options[:id]
       id = @options[:id]
     else
-      id = "12345"
+      id = '12345'
     end
-    puts "Defeating the evil Bot Detection Challenge, MUAHAHAHA" if @options[:verbose]
+    puts 'Defeating the evil Bot Detection Challenge, MUAHAHAHA' if @options[:verbose]
+    # TODO: Was this below statement actually supposed to be an "==" comparison? It seems a bit wonky
     if challenge_hash = parse_challenge_request(make_first_request("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=showCompDir"))
-      puts "Result for Challenge -" + challenge_hash['Challenge'].to_s + " = " + challenge_hash['ChallengeResult'].to_s + " HaHaHa, take that Jigsaw!!!" if @options[:verbose]
+      puts 'Result for Challenge -' + challenge_hash['Challenge'].to_s + ' = ' + challenge_hash['ChallengeResult'].to_s + ' HaHaHa, take that Jigsaw!!!' if @options[:verbose]
     end
     resp = make_second_request("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=showCompDir", challenge_hash)
-    if resp['set-cookie'].to_s.include? "BotMitigationCookie"
-      puts "W00t! Golden Ticket = " + resp['set-cookie'].to_s if @options[:verbose]
+    if resp['set-cookie'].to_s.include? 'BotMitigationCookie'
+      puts 'W00t! Golden Ticket = ' + resp['set-cookie'].to_s if @options[:verbose]
       @cookies = resp['set-cookie'].to_s
       get_remaining_cookies("/SearchContact.xhtml?companyId=#{@options[:id]}&opCode=showCompDir", @cookies)
     else
-      puts "Something went wrong, could not break challenge. try agian maybe o.0"
+      puts 'Something went wrong, could not break challenge. try again maybe o.0'
       exit!
     end
     return true
@@ -105,30 +106,30 @@ end
 
 # This third request method isn't required but it grabs JSESSIONID cookie
 # and jigsaw_id cookie.  My thoughts are the moving forward they will also check for those values
-# as "proof" of a legitemit user browsing.
+# as "proof" of a legitimate user browsing.
 # @param url [STRING] The url to make the HTTP request
 # @param cookies [HASH] Hash used to set cookies in HTTP header
 def get_remaining_cookies(url, cookies)
-  proxy_host, proxy_port = check_proxy()
+  proxy_host, proxy_port = check_proxy
   headers = {
-    "Host" => 'www.jigsaw.com',
-    "User-Agent" => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0',
-    "Accept" => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    "Accept-Language" => 'en-US,en;g=0.5',
-    "Accept-Encoding" => 'gzip, deflate',
-    "Content-Type" => 'text/plain',
-    "Pragma" => 'no-cache',
-    "Content-Length" => '0',
-    "Cache-Control" => 'no-cache',
-    "Connection" => 'keep-alive',
-    "DNT" => '1',
-    "Cookie" => cookies.to_s
+    'Host' => 'www.jigsaw.com',
+    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:21.0) Gecko/20100101 Firefox/21.0',
+    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language' => 'en-US,en;g=0.5',
+    'Accept-Encoding' => 'gzip, deflate',
+    'Content-Type' => 'text/plain',
+    'Pragma' => 'no-cache',
+    'Content-Length' => '0',
+    'Cache-Control' => 'no-cache',
+    'Connection' => 'keep-alive',
+    'DNT' => '1',
+    'Cookie' => cookies.to_s
   }
-  puts output_http(headers, "request", url) if @options[:debug]
+  puts output_http(headers, 'request', url) if @options[:debug]
   http = Net::HTTP.new('www.jigsaw.com', 80, proxy_host, proxy_port)
   resp, data = http.get(url, headers)
-  puts output_http(resp.header.to_hash, "response") if @options[:debug]
-  @cookies << ", " + resp['set-cookie'].to_s
+  puts output_http(resp.header.to_hash, 'response') if @options[:debug]
+  @cookies << ', ' + resp['set-cookie'].to_s
 end
 
 def parse_challenge_request(page)
@@ -141,8 +142,8 @@ end
 # Jigsaw's math to prove I am not a bot hehehehehehehe
 # Silly Jigsaw =P
 def get_challenge_answer(var1)
-  string = "" + var1
-  array = string.split("")
+  string = '' + var1
+  array = string.split('')
   array = array.reverse
   last_digit = array[0].to_i
   array = array.sort
